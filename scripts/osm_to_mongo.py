@@ -2,20 +2,56 @@ from pymongo import MongoClient
 import sys
 import os
 import xml.etree.cElementTree as ET
+from xml.etree.cElementTree import iterparse
 
 class OSMClass(object):
     """Base class for parsing the OSM data"""
     def __init__(self, client, filename):
-        self.client = MongoClient
+        self.client = client
         self.filename = filename
+
+        # Create databases
+        self.nodes = self.client['nodes']
+        self.users = self.nodes.users
+        self.spot = self.nodes.spot
 
     def parse(self):
         """Parse the xml file"""
-        print(self.filename)
-        # tree = ET.parse(self.filename)
 
-        tree = ET.iterparse(self.filename)
-        print(tree.getroot())
+        # Build parsetree
+        # tree = ET.iterparse(self.filename)
+        context = iter(iterparse(self.filename, events=('start', 'end')))
+        event, root = next(context)
+
+        n = 0
+        for event, elem in context:
+
+            if event == "start":
+                print('\n***************************')
+                # print(elem.tag)
+
+                if elem.tag == "node":
+                    print(elem.attrib)
+                    for tag in elem:
+                        print(tag)
+
+            elif event == "end":
+                print('***************************')
+
+            # for el in elem:
+            #     print('****')
+            #     print(el)
+        #     # if elem.tag == "node":
+        #     #     node = elem.attrib
+        #     #     print(node['id'])
+        #     #     self.spot.insert_one({"node_id": node['id'], "user": node['user'],
+        #     #                           "lon": node['lon'], "lat": node['lat'],
+        #     #                           "timestamp": node['timestamp']})
+        #
+            n += 1
+
+            if n > 50:
+                break
 
 
 if __name__ == "__main__":
@@ -29,7 +65,7 @@ if __name__ == "__main__":
 
     # Check if file exists
     if not os.path.exists(filename):
-        print "File %s doesn't exist." % (filename)
+        print("File %s doesn't exist." % (filename))
         sys.exit(-1)
 
     # Open mongodb
