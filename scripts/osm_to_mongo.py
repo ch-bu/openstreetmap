@@ -10,48 +10,63 @@ class OSMClass(object):
         self.client = client
         self.filename = filename
 
-        # Create databases
-        self.nodes = self.client['nodes']
-        self.users = self.nodes.users
-        self.spot = self.nodes.spot
+        # Create database object
+        self.elements = self.client['elements']
+
+        # Create collections
+        self.nodes = self.elements.nodes
+        self.ways = self.elements.ways
+        self.relations = self.elements.relations
 
     def parse(self):
         """Parse the xml file"""
 
         # Build parsetree
-        # tree = ET.iterparse(self.filename)
         context = iter(iterparse(self.filename, events=('start', 'end')))
         event, root = next(context)
 
         n = 0
         for event, elem in context:
-
             if event == "start":
-                print('\n***************************')
-                # print(elem.tag)
-
+                # Add elements to mongo database
                 if elem.tag == "node":
-                    print(elem.attrib)
-                    for tag in elem:
-                        print(tag)
+                    self.__insert_into_collection__(self.nodes, elem)
+                elif elem.tag == "way":
+                    self.__insert_into_collection__(self.ways, elem)
+                elif elem.tag == "relation":
+                    self.__insert_into_collection__(self.relations, elem)
 
-            elif event == "end":
-                print('***************************')
+            # n += 1
+            # if n > 50:
+            #     break
 
-            # for el in elem:
-            #     print('****')
-            #     print(el)
-        #     # if elem.tag == "node":
-        #     #     node = elem.attrib
-        #     #     print(node['id'])
-        #     #     self.spot.insert_one({"node_id": node['id'], "user": node['user'],
-        #     #                           "lon": node['lon'], "lat": node['lat'],
-        #     #                           "timestamp": node['timestamp']})
-        #
-            n += 1
 
-            if n > 50:
-                break
+    def __insert_into_collection__(self, collection, element):
+        """Insert an element into a collection"""
+        attrib = element.attrib
+
+        print("Insert: {}".format(element))
+
+        # Init tags
+        tags = {}
+
+        # Loop over every node
+        for tag in element:
+            # Some tags do not have a key or value
+            # for example the way
+            try:
+                tags[tag.attrib['k'].replace('.', '_')] = \
+                    tag.attrib['v'].replace('.', '_')
+            except KeyError:
+                pass
+
+        # Insert node to node collection
+        collection.insert_one({"_id": attrib['id'],
+                              "user": attrib['user'].replace('.', '_'),
+                              "lon": attrib.get('lon', None),
+                              "lat": attrib.get('lat', None),
+                              "timestamp": attrib['timestamp'],
+                              "tags": tags})
 
 
 if __name__ == "__main__":
