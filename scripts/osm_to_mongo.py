@@ -55,8 +55,8 @@ class OSMClass(object):
             # Some tags do not have a key or value
             # for example the way
             try:
-                tags[tag.attrib['k'].replace('.', '_')] = \
-                    tag.attrib['v'].replace('.', '_')
+                tags['key'] = tag.attrib['k'].replace('.', '_')
+                tags['value'] = tag.attrib['v'].replace('.', '_')
             except KeyError:
                 pass
 
