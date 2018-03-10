@@ -1,5 +1,6 @@
 from pymongo import MongoClient
 import sys
+import re
 import os
 import xml.etree.cElementTree as ET
 from xml.etree.cElementTree import iterparse
@@ -55,13 +56,14 @@ class OSMClass(object):
                     self.__insert_into_collection__(self.relations, elem)
 
             n += 1
-            if n > 100:
+            if n > 1800:
                 break
 
 
     def __insert_into_collection__(self, collection, element):
         """Insert an element into a collection"""
         attrib = element.attrib
+        regex_colon = re.compile(':')
 
         print("Insert: {}".format(element))
 
@@ -74,29 +76,45 @@ class OSMClass(object):
                 "changeset": attrib['changeset'],
                 "user": attrib['user'].replace('.', '_'),
                 "uid": attrib['uid']
-            },
-            "pos": [float(attrib.get('lon', None)),
-                    float(attrib.get('lat', None))]
-        }
+            }}
+        # Prepare node
+        if element.tag == "node":
+            element_to_insert["pos"] = [float(attrib.get('lon', None)),
+                        float(attrib.get('lat', None))]
+
+        # Prepare way
+        elif element.tag == "way":
+            pass
 
         # Loop over every element
         for tag in element:
-            # Some tags do not have a key or value
-            # for example the way
+            # Some tags do not contain a k element
+            # avoid them
             try:
-                element_to_insert[tag.attrib['k'].replace('.', '_')] = \
-                    tag.attrib['v'].replace('.', '_')
+                # Key contains information separated by colon -> :
+                if regex_colon.search(tag.attrib['k']):
+                    splitted = re.split(':', tag.attrib['k'])
+
+                    # Insert key if non-existent
+                    if splitted[0] not in element_to_insert:
+                        element_to_insert[splitted[0]] = {}
+
+                        # Create nested dictionary if non-existent
+                        if splitted[1] not in element_to_insert[splitted[0]]:
+                            element_to_insert[splitted[0]][splitted[1]] = {}
+
+                        # Add information of sub dictionary
+                        element_to_insert[splitted[0]][splitted[1]] = \
+                            tag.attrib['v'].replace('.', '_')
+                # Other key information
+                else:
+                    element_to_insert[tag.attrib['k'].replace('.', '_')] = \
+                        tag.attrib['v'].replace('.', '_')
             except KeyError:
                 pass
 
-        print(element_to_insert)
         # Insert node to node collection
-        # collection.insert_one({"_id": attrib['id'],
-        #                       "user": attrib['user'].replace('.', '_'),
-        #                       "lon": attrib.get('lon', None),
-        #                       "lat": attrib.get('lat', None),
-        #                       "timestamp": attrib['timestamp'],
-        #                       "tags": tags})
+        collection.insert_one(element_to_insert)
 
 
 if __name__ == "__main__":
@@ -120,4 +138,4 @@ if __name__ == "__main__":
     handler = OSMClass(client, filename)
 
     print(handler.count_tags())
-    # handler.parse()
+    handler.parse()
