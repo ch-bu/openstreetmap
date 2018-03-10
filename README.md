@@ -1,6 +1,8 @@
 # OpenStreetMap project from Udacity
 
-A project for the data science nanodegree from Udacity.
+A project for the data science nanodegree from Udacity. The project uses
+data munging techniques to wrangle a dataset from the OpenStreetMap database.
+For this project I chose the city of Freiburg.
 
 
 ## Installation
@@ -9,3 +11,6 @@ A project for the data science nanodegree from Udacity.
 2. [Install pymongo for python](https://api.mongodb.com/python/current/installation.html)
 3. Create mongodb directory: `mkdir mongodb`
 4. Run mongodb: `mongod --dbpath ./mongdb`
+5. Insert data into database: `python3 scripts/osm_to_mongo.py freiburg_sample.osm`
+6. Run Jupyter Notebook: `jupyter notebook project_description.ipynb`
+7. If you change the notebook you can export the notebook to html via: `jupyter nbconvert --to html project_description.ipynb`
