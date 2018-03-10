@@ -40,6 +40,8 @@ class OSMClass(object):
     def parse(self):
         """Parse the xml file"""
 
+        print('Parsing ...')
+
         # Build parsetree
         context = iter(iterparse(self.filename, events=('start', 'end')))
         event, root = next(context)
@@ -55,17 +57,20 @@ class OSMClass(object):
                 elif elem.tag == "relation":
                     self.__insert_into_collection__(self.relations, elem)
 
+        print('Parsing completed')
             # n += 1
             # if n > 31800:
             #     break
+        return None
 
 
     def __insert_into_collection__(self, collection, element):
         """Insert an element into a collection"""
         attrib = element.attrib
         regex_colon = re.compile(':')
+        problemchars = re.compile(r'[=\+/&<>;\'"\?%#$@\,\. \t\r\n]')
 
-        print("Insert: {}".format(element))
+        # print("Insert: {}".format(element))
 
         element_to_insert = {
             "id": attrib['id'],
@@ -77,35 +82,41 @@ class OSMClass(object):
                 "user": attrib['user'].replace('.', '_'),
                 "uid": attrib['uid']
             }}
-        # Prepare node
+
+        # Add position if tag == node
         if element.tag == "node":
             element_to_insert["pos"] = [float(attrib.get('lon', None)),
                         float(attrib.get('lat', None))]
 
-        # Loop over every element
+        # Loop over every tag in element
         for tag in element:
             # Some tags do not contain a k element
             # avoid them
             try:
-                # Key contains information separated by colon -> :
-                if regex_colon.search(tag.attrib['k']) and tag.tag == "tag":
-                    splitted = re.split(':', tag.attrib['k'])
+                # Do not process tags with problematic k key
+                if not problemchars.search(tag.attrib['k']):
+                    # Key contains information separated by colon -> :
+                    if regex_colon.search(tag.attrib['k']) and tag.tag == "tag":
 
-                    # Insert key if non-existent
-                    if splitted[0] not in element_to_insert:
-                        element_to_insert[splitted[0]] = {}
+                        splitted = re.split(':', tag.attrib['k'])
 
-                        # Create nested dictionary if non-existent
-                        if splitted[1] not in element_to_insert[splitted[0]]:
-                            element_to_insert[splitted[0]][splitted[1]] = {}
+                        # Insert key if non-existent
+                        if splitted[0] not in element_to_insert:
+                            element_to_insert[splitted[0]] = {}
 
-                        # Add information of sub dictionary
-                        element_to_insert[splitted[0]][splitted[1]] = \
+                            # Create nested dictionary if non-existent
+                            if splitted[1] not in element_to_insert[splitted[0]]:
+                                element_to_insert[splitted[0]][splitted[1]] = {}
+
+                            # Add information of sub dictionary
+                            element_to_insert[splitted[0]][splitted[1]] = \
+                                tag.attrib['v'].replace('.', '_')
+                    # Other key information
+                    else:
+                        element_to_insert[tag.attrib['k'].replace('.', '_')] = \
                             tag.attrib['v'].replace('.', '_')
-                # Other key information
                 else:
-                    element_to_insert[tag.attrib['k'].replace('.', '_')] = \
-                        tag.attrib['v'].replace('.', '_')
+                    print("We found a problematic key: {}".format(tag.attrib['k']))
             except KeyError:
                 pass
 
