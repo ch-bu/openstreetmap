@@ -18,6 +18,6 @@ For this project I chose the [city of Freiburg](https://en.wikipedia.org/wiki/Fr
 
 * **project_description.ipynb**: A jupyter notebook that is the basis for the html file
 * **freiburg.osm**: The whole map (87MB)
-* **freiburg_sample.osm**: A subset of freiburg.osm
+* **freiburg_sample.osm**: A subset of freiburg.osm (3.6MB)
 * **scripts/osm_to_mongo.py**: A script that audits the data and puts it into the mongo database
 * **scripts/query.py**: They queries used in the juypter notebook in a standalone python script
