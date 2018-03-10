@@ -18,6 +18,24 @@ class OSMClass(object):
         self.ways = self.elements.ways
         self.relations = self.elements.relations
 
+    def count_tags(self):
+        """Counts the number of tags in the map"""
+        # Build parsetree
+        context = iter(iterparse(self.filename, events=('start', 'end')))
+        event, root = next(context)
+
+        tag_dic = {}
+
+        for event, elem in context:
+            if event == "start":
+                if elem.tag not in tag_dic:
+                    tag_dic[elem.tag] = 1
+                else:
+                    tag_dic[elem.tag] += 1
+
+        return tag_dic
+
+
     def parse(self):
         """Parse the xml file"""
 
@@ -36,9 +54,9 @@ class OSMClass(object):
                 elif elem.tag == "relation":
                     self.__insert_into_collection__(self.relations, elem)
 
-            # n += 1
-            # if n > 50:
-            #     break
+            n += 1
+            if n > 100:
+                break
 
 
     def __insert_into_collection__(self, collection, element):
@@ -47,26 +65,38 @@ class OSMClass(object):
 
         print("Insert: {}".format(element))
 
-        # Init tags
-        tags = {}
+        element_to_insert = {
+            "id": attrib['id'],
+            "type": element.tag,
+            "visible": "true",
+            "created": {
+                "version": attrib['version'],
+                "changeset": attrib['changeset'],
+                "user": attrib['user'].replace('.', '_'),
+                "uid": attrib['uid']
+            },
+            "pos": [float(attrib.get('lon', None)),
+                    float(attrib.get('lat', None))]
+        }
 
-        # Loop over every node
+        # Loop over every element
         for tag in element:
             # Some tags do not have a key or value
             # for example the way
             try:
-                tags['key'] = tag.attrib['k'].replace('.', '_')
-                tags['value'] = tag.attrib['v'].replace('.', '_')
+                element_to_insert[tag.attrib['k'].replace('.', '_')] = \
+                    tag.attrib['v'].replace('.', '_')
             except KeyError:
                 pass
 
+        print(element_to_insert)
         # Insert node to node collection
-        collection.insert_one({"_id": attrib['id'],
-                              "user": attrib['user'].replace('.', '_'),
-                              "lon": attrib.get('lon', None),
-                              "lat": attrib.get('lat', None),
-                              "timestamp": attrib['timestamp'],
-                              "tags": tags})
+        # collection.insert_one({"_id": attrib['id'],
+        #                       "user": attrib['user'].replace('.', '_'),
+        #                       "lon": attrib.get('lon', None),
+        #                       "lat": attrib.get('lat', None),
+        #                       "timestamp": attrib['timestamp'],
+        #                       "tags": tags})
 
 
 if __name__ == "__main__":
@@ -89,4 +119,5 @@ if __name__ == "__main__":
     # Init OSMClass
     handler = OSMClass(client, filename)
 
-    handler.parse()
+    print(handler.count_tags())
+    # handler.parse()
