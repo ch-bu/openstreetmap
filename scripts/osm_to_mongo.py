@@ -55,9 +55,9 @@ class OSMClass(object):
                 elif elem.tag == "relation":
                     self.__insert_into_collection__(self.relations, elem)
 
-            n += 1
-            if n > 1800:
-                break
+            # n += 1
+            # if n > 31800:
+            #     break
 
 
     def __insert_into_collection__(self, collection, element):
@@ -82,17 +82,13 @@ class OSMClass(object):
             element_to_insert["pos"] = [float(attrib.get('lon', None)),
                         float(attrib.get('lat', None))]
 
-        # Prepare way
-        elif element.tag == "way":
-            pass
-
         # Loop over every element
         for tag in element:
             # Some tags do not contain a k element
             # avoid them
             try:
                 # Key contains information separated by colon -> :
-                if regex_colon.search(tag.attrib['k']):
+                if regex_colon.search(tag.attrib['k']) and tag.tag == "tag":
                     splitted = re.split(':', tag.attrib['k'])
 
                     # Insert key if non-existent
@@ -112,6 +108,15 @@ class OSMClass(object):
                         tag.attrib['v'].replace('.', '_')
             except KeyError:
                 pass
+
+            # Redesign nd refs. Put them into an list
+            if tag.tag == "nd":
+                # If node_refs non-existent create empty list
+                if "node_refs" not in element_to_insert:
+                    element_to_insert['node_refs'] = []
+
+                # Append ref to list
+                element_to_insert['node_refs'].append(tag.attrib['ref'])
 
         # Insert node to node collection
         collection.insert_one(element_to_insert)
