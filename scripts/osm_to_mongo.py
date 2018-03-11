@@ -139,7 +139,9 @@ class OSMClass(object):
         """Cleans malformed keys and returns cleaned key"""
 
         # Conditions for cleaning
-        rep = {"contact:email": "email", ".": "_"}
+        rep = {"contact:email": "email",
+               "contact:phone": "phone",
+               ".": "_"}
 
         # Regex to replace according to condition
         rep = dict((re.escape(k), v) for k, v in rep.items())
