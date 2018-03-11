@@ -141,6 +141,7 @@ class OSMClass(object):
         # Conditions for cleaning
         rep = {"contact:email": "email",
                "contact:phone": "phone",
+               "contact:website": "website",
                ".": "_"}
 
         # Regex to replace according to condition
