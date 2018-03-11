@@ -93,12 +93,14 @@ class OSMClass(object):
             # Some tags do not contain a k element
             # avoid them
             try:
-                # Do not process tags with problematic k key
-                if not problemchars.search(tag.attrib['k']):
-                    # Key contains information separated by colon -> :
-                    if regex_colon.search(tag.attrib['k']) and tag.tag == "tag":
+                new_key = self.__clean_key__(tag.attrib['k'])
 
-                        splitted = re.split(':', tag.attrib['k'])
+                # Do not process tags with problematic k key
+                if not problemchars.search(new_key):
+                    # Key contains information separated by colon -> :
+                    if regex_colon.search(new_key) and tag.tag == "tag":
+
+                        splitted = re.split(':', new_key)
 
                         # Insert key if non-existent
                         if splitted[0] not in element_to_insert:
@@ -113,7 +115,7 @@ class OSMClass(object):
                                 tag.attrib['v'].replace('.', '_')
                     # Other key information
                     else:
-                        element_to_insert[tag.attrib['k'].replace('.', '_')] = \
+                        element_to_insert[new_key] = \
                             tag.attrib['v'].replace('.', '_')
                 else:
                     print("We found a problematic key: {}".format(tag.attrib['k']))
@@ -131,6 +133,22 @@ class OSMClass(object):
 
         # Insert node to node collection
         collection.insert_one(element_to_insert)
+
+
+    def __clean_key__(self, current_key):
+        """Cleans malformed keys and returns cleaned key"""
+
+        # Conditions for cleaning
+        rep = {"contact:email": "email", ".": "_"}
+
+        # Regex to replace according to condition
+        rep = dict((re.escape(k), v) for k, v in rep.items())
+        pattern = re.compile("|".join(rep.keys()))
+
+        # Create new key
+        new_key = pattern.sub(lambda m: rep[re.escape(m.group(0))], current_key)
+
+        return new_key
 
 
 if __name__ == "__main__":
