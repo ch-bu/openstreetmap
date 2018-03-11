@@ -4,6 +4,8 @@ import re
 import os
 import xml.etree.cElementTree as ET
 from xml.etree.cElementTree import iterparse
+from urllib.parse import urlparse
+
 
 class OSMClass(object):
     """Base class for parsing the OSM data"""
@@ -94,6 +96,7 @@ class OSMClass(object):
             # avoid them
             try:
                 new_key = self.__clean_key__(tag.attrib['k'])
+                new_value = self.__clean_value__(tag.attrib['v'])
 
                 # Do not process tags with problematic k key
                 if not problemchars.search(new_key):
@@ -152,6 +155,18 @@ class OSMClass(object):
         new_key = pattern.sub(lambda m: rep[re.escape(m.group(0))], current_key)
 
         return new_key
+
+    def __clean_value__(self, current_value):
+        """Clean malformed values and return cleaned value"""
+
+        new_value = current_value
+
+        # We found a malformed url
+        if new_value.startswith('www'):
+            new_value = 'http://' + new_value
+            print(new_value)
+
+        return new_value
 
 
 if __name__ == "__main__":
